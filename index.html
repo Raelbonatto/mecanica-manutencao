@@ -2,484 +2,233 @@
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>Mecânica – Planejamento de Manutenção</title>
+  <title>Planejamento de Manutenção</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- React pelo CDN + Babel para permitir ES6 no navegador -->
-  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- Estilos simples (sem Tailwind, sem instalação) -->
   <style>
     :root{
-      --bg:#f6f7fb; --card:#fff; --text:#0f172a; --muted:#64748b; --line:#e5e7eb;
-      --rose:#ffe7ea; --rose2:#ef4444; --pri:#2563eb;
+      --bg:#0b1220; --panel:#0f172a; --line:#1f2937; --muted:#93a3b8;
+      --text:#e5e7eb; --accent:#38bdf8; --danger:#ef4444; --ok:#22c55e;
     }
     *{ box-sizing:border-box; }
-    body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial; background:var(--bg); color:var(--text);}
-    header{ position:sticky; top:0; backdrop-filter: blur(6px); background:rgba(255,255,255,.85); border-bottom:1px solid var(--line);}
-    .wrap{ max-width:1100px; margin:0 auto; padding:16px; }
-    h1{ font-size:20px; margin:0; display:flex; gap:8px; align-items:center; }
-    .grid{ display:grid; gap:12px; }
-    .g2{ grid-template-columns: repeat(2,minmax(0,1fr)); }
-    .g3{ grid-template-columns: repeat(3,minmax(0,1fr)); }
-    .card{ background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
-    .card h3{ margin:0; padding:12px 14px; border-bottom:1px solid var(--line); font-size:16px; }
-    .content{ padding:12px 14px; }
-    .row{ display:flex; gap:8px; flex-wrap:wrap; align-items:end; }
-    label{ font-size:12px; color:var(--muted); display:block; }
-    input, select, textarea, button{ font:inherit; }
-    input, select, textarea{ border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:#fff; width:100%; }
-    textarea{ resize:vertical; }
-    .btn{ border:1px solid var(--line); background:#fff; padding:8px 12px; border-radius:8px; cursor:pointer; }
-    .btn.pri{ background:var(--pri); color:#fff; border-color:var(--pri); }
-    .btn.danger{ background:#ef4444; color:#fff; border-color:#ef4444; }
-    .badge{ display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid var(--line); font-size:12px; color:var(--muted);}
-    .badge.sec{ background:#f3f4f6; }
-    .kpi{ display:flex; align-items:center; gap:10px; padding:12px; }
-    .kpi .n{ font-weight:700; font-size:20px; }
-    .table-wrap{ overflow:auto; }
-    table{ border-collapse:collapse; width:100%; font-size:14px; }
-    th, td{ padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
-    thead th{ position:sticky; top:0; background:#f1f5f9; z-index:1; }
-    tr.late{ background:var(--rose); }
-    .kanban{ display:grid; gap:12px; grid-template-columns:repeat(3,minmax(0,1fr)); }
-    .col .count{ float:right; }
-    .card-sm{ border:1px solid var(--line); border-radius:10px; padding:10px; background:#fff; }
-    .muted{ color:var(--muted); }
-    .danger{ color:var(--rose2); }
-    footer{ text-align:center; font-size:12px; color:var(--muted); padding:24px; }
-    @media (max-width:900px){ .g2{grid-template-columns:1fr;} .g3{grid-template-columns:1fr;} .kanban{grid-template-columns:1fr;} }
-
-    /* --- MONITORAMENTO --- */
-    .monitor .hdr{
-      display:flex; align-items:center; justify-content:space-between;
-      padding:10px 14px; background:#0f172a; color:#fff; border-radius:10px 10px 0 0;
+    html,body{ height:100%; }
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial;
+      background:linear-gradient(180deg,#0b1220,#0b1220 30%,#0d1525); color:var(--text);
     }
-    .monitor .wrapin{ padding:12px 14px; background:#fff; border:1px solid var(--line); border-top:none; border-radius:0 0 12px 12px; }
-    .monitor h4{ margin:0; font-size:16px; }
-    .badge-num{ background:#fff; color:#0f172a; border-radius:999px; padding:2px 8px; font-weight:700; font-size:13px; }
-    .tbl-monitor{ width:100%; border-collapse:collapse; font-size:14px; }
-    .tbl-monitor th, .tbl-monitor td{ padding:8px 10px; border-bottom:1px solid var(--line); text-align:left; }
-    .tr-red{ background:#ef4444; color:#fff; }          /* linha vermelha atrasada */
-    .tr-red a{ color:#fff; text-decoration:underline; }
+    a{ color:var(--text); text-decoration:none; }
+    header{
+      position:sticky; top:0; background:#0f172a; border-bottom:1px solid var(--line);
+      padding:12px 18px; display:flex; align-items:center; justify-content:space-between; z-index:10;
+    }
+    .title{ font-weight:700; letter-spacing:.4px; }
+    .hdr-actions{ display:flex; gap:8px; align-items:center; }
+    .btn{
+      background:#111827; border:1px solid #1f2937; color:#e5e7eb; padding:8px 12px; border-radius:10px; cursor:pointer;
+    }
+    .btn:hover{ filter:brightness(1.08); }
+    .btn.primary{ border-color:#0ea5e9; color:#e6f9ff; box-shadow:0 0 0 1px #0ea5e9 inset; }
+    .wrap{ max-width:1100px; margin:0 auto; padding:18px; }
+    .grid{ display:grid; gap:18px; }
+    .panel{ background:#0f172a; border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+    .panel h2{ margin:0; padding:12px 16px; border-bottom:1px solid var(--line); font-size:18px; }
+    .content{ padding:16px; }
+    .row{ display:flex; gap:12px; flex-wrap:wrap; align-items:end; }
+    label{ display:block; color:#cbd5e1; font-size:12px; margin-bottom:6px; }
+    input, select, textarea{
+      background:#0b1220; color:#e5e7eb; border:1px solid #1f2937; border-radius:10px; padding:10px 12px; min-width:220px;
+    }
+    textarea{ width:100%; resize:vertical; }
+    .two{ display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
+    @media (max-width:900px){ .two{ grid-template-columns:1fr; } }
+    table{ width:100%; border-collapse:collapse; }
+    th,td{ padding:12px 14px; border-bottom:1px solid var(--line); text-align:left; }
+    thead th{ position:sticky; top:0; background:#0f172a; z-index:1; color:#cbd5e1; }
+    tr.late{ background:#3b0d0d; }
+    .muted{ color:#93a3b8; }
+    .kpis{ display:grid; gap:14px; grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .kpi{ background:#0f172a; border:1px solid var(--line); border-radius:14px; padding:14px; display:flex; gap:12px; align-items:center; }
+    .kpi .n{ font-size:32px; font-weight:800; }
+    .danger{ color:#ff7b7b; }
+    .ok{ color:#22c55e; }
   </style>
 </head>
 <body>
   <header>
-  <div class="wrap" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
-    <h1>🏭 Manutenção Industrial – Injetoras</h1>
-
-    <!-- mantenha os botões juntos num container próprio -->
-    <div class="hdr-actions" style="display:flex; gap:8px; align-items:center;">
+    <div class="title">🗓️ Planejamento de Manutenção</div>
+    <div class="hdr-actions">
       <a class="btn" href="./cadastros.html">Cadastros</a>
       <a class="btn" href="./monitor.html">Monitoramento</a>
+      <button class="btn" id="toggleListaBtn">Ver planejamentos</button>
       <button class="btn" id="exportCsvBtn">Exportar CSV</button>
     </div>
-  </div>
-</header>
+  </header>
 
-
-  <main class="wrap grid" style="gap:16px;">
-
-    <!-- KPIs -->
-    <section class="grid g3">
-      <div class="card"><div class="kpi"><div>📄 Total</div><div class="n" id="kpiTotal">0</div></div></div>
-      <div class="card"><div class="kpi"><div class="danger">⏰ Atrasadas</div><div class="n" id="kpiAtrasadas">0</div></div></div>
-      <div class="card"><div class="kpi"><div>📆 Vencem hoje</div><div class="n" id="kpiHoje">0</div></div></div>
+  <div class="wrap grid">
+    <!-- KPIs simples -->
+    <section class="kpis">
+      <div class="kpi"><div class="n" id="kTotal">0</div><div>Total</div></div>
+      <div class="kpi"><div class="n danger" id="kAtrasadas">0</div><div>Atrasadas</div></div>
+      <div class="kpi"><div class="n ok" id="kHoje">0</div><div>Vencem hoje</div></div>
     </section>
 
-    <!-- ÁREA DE MONITORAMENTO -->
-    <section class="monitor">
-      <div class="hdr">
-        <h4>📺 Área de monitoramento</h4>
-        <div class="muted" style="color:#cbd5e1">Foco do dia e pendências</div>
-      </div>
-      <div class="wrapin grid g2" style="gap:14px">
-        <!-- HOJE -->
-        <div class="card" style="border:none; box-shadow:none;">
-          <h3 style="margin:0; padding:0 0 8px 0">📆 Para hoje <span class="badge-num" id="monTodayCount">0</span></h3>
-          <div class="content" style="padding:0">
-            <table class="tbl-monitor" id="monTodayTbl">
-              <thead>
-                <tr>
-                  <th>Data</th><th>Máquina</th><th>Item</th><th>Tipo</th><th>Status</th><th>Operadores</th>
-                </tr>
-              </thead>
-              <tbody id="monTodayBody"></tbody>
-            </table>
-          </div>
-        </div>
-        <!-- ATRASADAS -->
-        <div class="card" style="border:none; box-shadow:none;">
-          <h3 style="margin:0; padding:0 0 8px 0">🚨 Atrasadas <span class="badge-num" id="monLateCount">0</span></h3>
-          <div class="content" style="padding:0">
-            <table class="tbl-monitor" id="monLateTbl">
-              <thead>
-                <tr>
-                  <th>Data</th><th>Máquina</th><th>Item</th><th>Tipo</th><th>Status</th><th>Operadores</th>
-                </tr>
-              </thead>
-              <tbody id="monLateBody"></tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Filtros -->
-    <section class="card">
-      <h3>Filtros</h3>
-      <div class="content row">
-        <div style="min-width:220px; flex:1;">
-          <label>Buscar</label>
-          <input id="fBusca" placeholder="Código, máquina, item…" />
-        </div>
-        <div style="min-width:160px;">
-          <label>Setor</label>
-          <select id="fSetor">
-            <option value="todos">Todos</option>
-          </select>
-        </div>
-        <div style="min-width:160px;">
-          <label>Tipo</label>
-          <select id="fTipo">
-            <option value="todos">Todos</option>
-            <option>Preventiva</option>
-            <option>Preditiva</option>
-            <option>Corretiva</option>
-            <option>Melhoria</option>
-          </select>
-        </div>
-        <div style="min-width:160px;">
-          <label>Status</label>
-          <select id="fStatus">
-            <option value="todos">Todos</option>
-            <option>Planejada</option>
-            <option>Em Execução</option>
-            <option>Concluída</option>
-          </select>
-        </div>
-        <button class="btn" id="btnLimpar">Limpar</button>
-      </div>
-    </section>
-
-    <!-- Tabs simples -->
-    <section class="row" style="justify-content:flex-start">
-      <button class="btn" data-tab="planejamento">Planejamento</button>
-      <button class="btn" data-tab="quadro">Quadro</button>
-      <button class="btn" data-tab="checklist">Checklist</button>
-      <button class="btn" data-tab="cadastro">Cadastro rápido</button>
-    </section>
-
-    <!-- Planejamento -->
-    <section class="card tab" id="tab-planejamento">
-      <h3>Planejamento (Planilha)</h3>
-      <div class="content table-wrap">
-        <table id="tbl">
-          <thead>
-            <tr>
-              <th>Código</th><th>Máquina</th><th>Setor</th><th>Item</th>
-              <th>O que fazer</th><th>O que fazer 2</th>
-              <th>Ciclo (dias)</th><th>Última</th><th>Próxima</th>
-              <th>Tipo</th><th>Status</th><th>Operadores</th>
-              <th>Duração (h)</th><th>Custo tempo</th><th>Custo material</th>
-              <th>Obs.</th><th>Ações</th>
-            </tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- Quadro -->
-    <section class="tab" id="tab-quadro">
-      <div class="grid kanban">
-        <div class="card col">
-          <h3>Planejada <span class="count" id="cPlanejada">0</span></h3>
-          <div class="content" id="colPlanejada"></div>
-        </div>
-        <div class="card col">
-          <h3>Em Execução <span class="count" id="cExec">0</span></h3>
-          <div class="content" id="colExec"></div>
-        </div>
-        <div class="card col">
-          <h3>Concluída <span class="count" id="cConc">0</span></h3>
-          <div class="content" id="colConc"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Checklist -->
-    <section class="card tab" id="tab-checklist">
-      <h3>Checklist</h3>
-      <div class="content grid g2" id="checklist"></div>
-    </section>
-
-    <!-- Cadastro rápido -->
-    <section class="card tab" id="tab-cadastro">
-      <h3>Cadastro rápido</h3>
+    <!-- Formulário de Planejamento -->
+    <section class="panel">
+      <h2>✍️ Planejar nova manutenção</h2>
       <div class="content">
-        <form id="formCad" class="grid g2">
-          <div><label>Código</label><input name="codigo" placeholder="INJ-12" /></div>
-          <div><label>Máquina</label><input name="maquina" placeholder="Injetora 120T" /></div>
-          <div>
-            <label>Setor</label>
-            <input name="setor" placeholder="Injeção" list="listaSetores" />
-            <datalist id="listaSetores"></datalist>
+        <form id="formCad" class="grid">
+          <div class="two">
+            <div><label>Código</label><input name="codigo" placeholder="INJ-12"></div>
+            <div><label>Máquina</label><input name="maquina" placeholder="Injetora 120T" list="listaEquip"></div>
+            <datalist id="listaEquip"></datalist>
           </div>
-          <div><label>Item</label><input name="item" placeholder="Troca filtro óleo" /></div>
-          <div><label>O que fazer</label><input name="oque1" /></div>
-          <div><label>O que fazer 2</label><input name="oque2" /></div>
-          <div><label>Ciclo (dias)</label><input type="number" name="ciclo" value="30" /></div>
-          <div><label>Última manutenção</label><input type="date" name="ultima" /></div>
-          <div>
-            <label>Tipo</label>
-            <select name="tipo">
-              <option>Preventiva</option><option>Preditiva</option>
-              <option>Corretiva</option><option>Melhoria</option>
-            </select>
+          <div class="two">
+            <div><label>Setor</label><input name="setor" placeholder="Injeção"></div>
+            <div><label>Item (serviço)</label><input name="item" placeholder="Troca filtro óleo" list="listaServ"></div>
+            <datalist id="listaServ"></datalist>
           </div>
-          <div><label>Operadores (separe por vírgula)</label><input name="operadores" placeholder="Carlos,Aline" /></div>
-          <div><label>Duração (h)</label><input type="number" step="0.1" name="duracao" value="1.0" /></div>
-          <div><label>Custo tempo</label><input type="number" step="0.01" name="cTempo" value="0" /></div>
-          <div><label>Custo material</label><input type="number" step="0.01" name="cMat" value="0" /></div>
-          <div class="g2" style="grid-column:1/-1"><label>Observações</label><textarea name="obs" rows="3"></textarea></div>
-          <div style="grid-column:1/-1; display:flex; justify-content:flex-end;">
-            <button class="btn pri">Criar programação</button>
+          <div class="two">
+            <div><label>O que fazer</label><input name="oque1"></div>
+            <div><label>O que fazer 2</label><input name="oque2"></div>
+          </div>
+          <div class="two">
+            <div><label>Ciclo (dias)</label><input type="number" name="ciclo" value="30"></div>
+            <div><label>Última manutenção</label><input type="date" name="ultima"></div>
+          </div>
+          <div class="two">
+            <div>
+              <label>Tipo</label>
+              <select name="tipo" id="selectTipo">
+                <option>Preventiva</option><option>Preditiva</option>
+                <option>Corretiva</option><option>Melhoria</option>
+              </select>
+            </div>
+            <div><label>Operadores (vírgula)</label><input name="operadores" placeholder="Carlos,Aline" list="listaOps"></div>
+            <datalist id="listaOps"></datalist>
+          </div>
+          <div class="two">
+            <div><label>Duração (h)</label><input type="number" step="0.1" name="duracao" value="1.0"></div>
+            <div><label>Custo material (R$)</label><input type="number" step="0.01" name="cMat" value="0"></div>
+          </div>
+          <div class="two">
+            <div><label>Custo tempo (R$)</label><input type="number" step="0.01" name="cTempo" value="0"></div>
+            <div><label>Observações</label><input name="obs"></div>
+          </div>
+          <div class="row" style="justify-content:flex-end">
+            <button class="btn primary">Criar programação</button>
           </div>
         </form>
       </div>
     </section>
 
-  </main>
+    <!-- Lista de Planejamentos (inicialmente escondida) -->
+    <section class="panel" id="listaPanel" style="display:none">
+      <h2>📄 Todos os planejamentos</h2>
+      <div class="content" style="padding:0">
+        <div style="overflow:auto">
+          <table>
+            <thead>
+              <tr>
+                <th>Próxima</th><th>Código</th><th>Máquina</th><th>Setor</th>
+                <th>Item</th><th>Tipo</th><th>Status</th><th>Operadores</th>
+                <th>Duração(h)</th><th>Custo</th><th class="muted">Ações</th>
+              </tr>
+            </thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
 
-  <footer>Protótipo simples – dados salvos no seu navegador (localStorage).</footer>
-
-  <!-- APP: lógica JS + localStorage -->
-  <script type="text/babel">
+  <script>
+    // ======= DADOS (localStorage) =======
     const STORAGE_KEY='mecanica_planejamento_github_v1';
     const STATUS=['Planejada','Em Execução','Concluída'];
 
-    function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+    const toBR = d => new Date(d).toLocaleDateString('pt-BR');
     const addDays=(iso,d)=>{ const x=new Date(iso); x.setDate(x.getDate()+d); return x.toISOString(); }
-    const toBRDate=(d)=> new Date(d).toLocaleDateString('pt-BR');
     const sameDay=(a,b)=> new Date(a).toDateString()===new Date(b).toDateString();
     const overdue=(iso)=> new Date(iso) < new Date(new Date().toDateString()+' 23:59:59');
+    const fmtMoeda = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
     let rows = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null') ?? [
-      { id:uid(), codigo:'INJ-12', maquina:'Injetora 120T', setor:'Injeção',
-        item:'Lubrificação eixo Z', oque1:'Lubrificar guias e fuso', oque2:'Checar folgas',
+      { id:crypto.randomUUID(), codigo:'INJ-12', maquina:'Injetora 120T', setor:'Injeção',
+        item:'Lubrificação eixo Z', oque1:'Lubrificar guias', oque2:'Checar folgas',
         cicloDias:30, ultima:new Date().toISOString(), proxima:addDays(new Date().toISOString(),30),
-        tipo:'Preventiva', status:'Planejada', operadores:['Carlos'], duracaoHoras:1.5, custoTempo:1750, custoMaterial:0, observacoes:'Usar graxa EP-2' },
-      { id:uid(), codigo:'INJ-22', maquina:'Injetora 220T', setor:'Injeção',
-        item:'Troca filtro óleo hidráulico', oque1:'Substituir elemento', oque2:'Resetar contador',
-        cicloDias:90, ultima:addDays(new Date().toISOString(),-92), proxima:addDays(new Date().toISOString(),-2),
-        tipo:'Preventiva', status:'Planejada', operadores:['Aline'], duracaoHoras:2, custoTempo:0, custoMaterial:350, observacoes:'Código 0xF' }
+        tipo:'Preventiva', status:'Planejada', operadores:['Carlos'], duracaoHoras:1.5, custoTempo:0, custoMaterial:0, observacoes:'' }
     ];
-    save();
+    function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(rows)); }
 
-    function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(rows)); renderAll(); }
-
-    // ---- Filtros ----
-    const fBusca = document.getElementById('fBusca');
-    const fSetor = document.getElementById('fSetor');
-    const fTipo  = document.getElementById('fTipo');
-    const fStatus= document.getElementById('fStatus');
-    const btnLimpar=document.getElementById('btnLimpar');
-
-    function setoresUnicos(){ return Array.from(new Set(rows.map(r=>r.setor).filter(Boolean))).sort(); }
-    function preencherSelectSetor(){
-      const list = setoresUnicos(); // se quiser fixo, troque por ['Injeção','Manutenção','Ferramentaria','Compressor','Refrigeração']
-      fSetor.innerHTML = '<option value="todos">Todos</option>' + list.map(s=>`<option>${s}</option>`).join('');
-      const dl = document.getElementById('listaSetores');
-      dl.innerHTML = list.map(s=>`<option value="${s}">`).join('');
+    // ======= CADASTROS -> datalists/select (opcional, lidos do localStorage dos cadastros) =======
+    function applyMasters(){
+      let m={}; try{ m = JSON.parse(localStorage.getItem('mecanica_masters_v1')||'{}'); }catch(_){}
+      const equip=(m.equipamentos||[]).sort();
+      const serv=(m.servicos||[]).sort();
+      const ops=(m.operadores||[]).sort();
+      const tipos=(m.tipos&&m.tipos.length?m.tipos:['Preventiva','Preditiva','Corretiva','Melhoria']);
+      const dlE=document.getElementById('listaEquip'); if(dlE) dlE.innerHTML=equip.map(x=>`<option value="${x}">`).join('');
+      const dlS=document.getElementById('listaServ');  if(dlS) dlS.innerHTML=serv.map(x=>`<option value="${x}">`).join('');
+      const dlO=document.getElementById('listaOps');   if(dlO) dlO.innerHTML=ops.map(x=>`<option value="${x}">`).join('');
+      const sel=document.getElementById('selectTipo'); if(sel) sel.innerHTML=tipos.map(t=>`<option>${t}</option>`).join('');
     }
-    preencherSelectSetor();
+    applyMasters();
 
-    function filtrados(){
-      const q=(fBusca.value||'').trim().toLowerCase();
-      return rows.filter(r=>{
-        const qok=!q || [r.codigo,r.maquina,r.item,r.oque1,r.oque2,r.setor].some(v=>String(v||'').toLowerCase().includes(q));
-        const sok=fSetor.value==='todos' || r.setor===fSetor.value;
-        const tok=fTipo.value==='todos'  || r.tipo===fTipo.value;
-        const stok=fStatus.value==='todos'|| r.status===fStatus.value;
-        return qok&&sok&&tok&&stok;
-      });
-    }
-    btnLimpar.onclick=()=>{ fBusca.value=''; fSetor.value='todos'; fTipo.value='todos'; fStatus.value='todos'; renderAll(); }
-    ;[fBusca,fSetor,fTipo,fStatus].forEach(el=> el.addEventListener('input', renderAll));
-
-    // ---- TABELA ----
-    function renderTabela(){
-      const tb=document.getElementById('tbody'); tb.innerHTML='';
-      filtrados().forEach(r=>{
-        const tr=document.createElement('tr');
-        if(overdue(r.proxima) && r.status!=='Concluída') tr.className='late';
-        tr.innerHTML=`
-          <td><code>${r.codigo||''}</code></td>
-          <td>${r.maquina||''}</td>
-          <td>${r.setor||''}</td>
-          <td>${r.item||''}</td>
-          <td class="muted">${r.oque1||''}</td>
-          <td class="muted">${r.oque2||''}</td>
-          <td style="text-align:center">${r.cicloDias||''}</td>
-          <td>${toBRDate(r.ultima)}</td>
-          <td>${toBRDate(r.proxima)}</td>
-          <td>${r.tipo||''}</td>
-          <td>${r.status||''}</td>
-          <td>${(r.operadores||[]).join(', ')}</td>
-          <td style="text-align:center">${r.duracaoHoras||''}</td>
-          <td style="text-align:right">${fmt(r.custoTempo)}</td>
-          <td style="text-align:right">${fmt(r.custoMaterial)}</td>
-          <td>${r.observacoes||''}</td>
-          <td>
-            <div class="row" style="gap:6px">
-              <button class="btn" data-act="voltar">Voltar</button>
-              <button class="btn" data-act="avancar">Avançar</button>
-              <button class="btn danger" data-act="remover">Remover</button>
-            </div>
-          </td>`;
-        tr.querySelector('[data-act="voltar"]').onclick = ()=>{ move(r.id,-1); };
-        tr.querySelector('[data-act="avancar"]').onclick= ()=>{ move(r.id,+1); };
-        tr.querySelector('[data-act="remover"]').onclick= ()=>{ rows=rows.filter(x=>x.id!==r.id); save(); };
-        tb.appendChild(tr);
-      });
-    }
-
-    function move(id,delta){
-      const i=rows.findIndex(r=>r.id===id); if(i<0) return;
-      const cur=rows[i]; const idx=STATUS.indexOf(cur.status); const nxt=Math.max(0,Math.min(STATUS.length-1,idx+delta));
-      rows[i]={...cur,status:STATUS[nxt]}; save();
-    }
-
-    // ---- KANBAN ----
-    function renderKanban(){
-      const by = s => filtrados().filter(r=>r.status===s).sort((a,b)=> new Date(a.proxima)-new Date(b.proxima));
-      const mount = (id, arr) => {
-        const el=document.getElementById(id); el.innerHTML='';
-        arr.forEach(r=>{
-          const c=document.createElement('div'); c.className='card-sm';
-          c.style.borderColor = (overdue(r.proxima) && r.status!=='Concluída') ? '#fecaca' : '#e5e7eb';
-          c.innerHTML=`
-            <div style="display:flex; justify-content:space-between; gap:8px;">
-              <div style="font-weight:600">${r.item}</div>
-              <span class="badge sec">${toBRDate(r.proxima)}</span>
-            </div>
-            <div class="muted">${r.maquina} • ${r.codigo}</div>
-            <div class="muted" style="font-size:12px; display:flex; justify-content:space-between"><span>${r.setor}</span><span>${r.tipo}</span></div>
-            <div class="row" style="justify-content:flex-end; margin-top:8px;">
-              ${r.status!=='Planejada' ? '<button class="btn">Voltar</button>' : ''}
-              ${r.status!=='Concluída' ? '<button class="btn pri">Avançar</button>' : '<button class="btn danger">Remover</button>'}
-            </div>`;
-          const btns=c.querySelectorAll('button');
-          if(btns[0] && r.status!=='Planejada') btns[0].onclick=()=>move(r.id,-1);
-          if(r.status!=='Concluída') btns[btns.length-1].onclick=()=>move(r.id,+1);
-          else btns[btns.length-1].onclick=()=>{ rows=rows.filter(x=>x.id!==r.id); save(); };
-          el.appendChild(c);
-        });
-      };
-      const p=by('Planejada'), e=by('Em Execução'), c=by('Concluída');
-      mount('colPlanejada',p); mount('colExec',e); mount('colConc',c);
-      document.getElementById('cPlanejada').textContent=p.length;
-      document.getElementById('cExec').textContent=e.length;
-      document.getElementById('cConc').textContent=c.length;
-    }
-
-    // ---- CHECKLIST ----
-    function renderChecklist(){
-      const el=document.getElementById('checklist'); el.innerHTML='';
-      filtrados().forEach(r=>{
-        const card=document.createElement('div'); card.className='card';
-        card.innerHTML=`
-          <h3 style="display:flex; justify-content:space-between; align-items:center; padding:12px 14px;">
-            <span>${r.maquina} • <span class="muted" style="font-weight:400">${r.item}</span></span>
-            <span class="badge sec">${toBRDate(r.proxima)}</span>
-          </h3>
-          <div class="content">
-            <div class="muted">${r.oque1 || ''}${r.oque2 ? ' • '+r.oque2 : ''}</div>
-            <div class="row" style="margin:8px 0;">
-              ${['LOTO aplicado','Área isolada e limpa','Peças corretas','Ferramentas ok','Testes após manutenção','Liberado p/ produção']
-                .map(txt=>`<label style="display:inline-flex; gap:6px; align-items:center;">
-                  <input type="checkbox"/> ${txt}
-                </label>`).join('')}
-            </div>
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <div class="muted" style="font-size:12px;">Operadores: ${(r.operadores||[]).join(', ') || '-'}</div>
-              ${r.status!=='Concluída' ? '<button class="btn pri">Concluir</button>' : ''}
-            </div>
-          </div>`;
-        const btn=card.querySelector('button');
-        if(btn) btn.onclick=()=>{ rows=rows.map(x=> x.id===r.id ? {...x,status:'Concluída'} : x ); save(); };
-        el.appendChild(card);
-      });
-    }
-
-    // ---- KPIs ----
+    // ======= KPI =======
     function renderKpis(){
-      const list=filtrados();
-      const total=list.length;
-      const atras=list.filter(r=>overdue(r.proxima) && r.status!=='Concluída').length;
-      const hoje=list.filter(r=>sameDay(r.proxima,new Date())).length;
-      document.getElementById('kpiTotal').textContent=total;
-      document.getElementById('kpiAtrasadas').textContent=atras;
-      document.getElementById('kpiHoje').textContent=hoje;
+      const atras = rows.filter(r=>overdue(r.proxima) && r.status!=='Concluída').length;
+      const hoje  = rows.filter(r=>sameDay(r.proxima,new Date()) && r.status!=='Concluída').length;
+      document.getElementById('kTotal').textContent = rows.length;
+      document.getElementById('kAtrasadas').textContent = atras;
+      document.getElementById('kHoje').textContent = hoje;
     }
 
-    // ---- MONITORAMENTO ----
-    function renderMonitor(){
-      const todayBody = document.getElementById('monTodayBody');
-      const lateBody  = document.getElementById('monLateBody');
-      if(!todayBody || !lateBody) return;
-
-      const hoje = filtrados().filter(r => sameDay(r.proxima, new Date()) && r.status!=='Concluída');
-      const atras = filtrados().filter(r => overdue(r.proxima) && r.status!=='Concluída');
-
-      // HOJE
-      todayBody.innerHTML = '';
-      hoje.sort((a,b)=> new Date(a.proxima) - new Date(b.proxima))
-          .forEach(r=>{
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-              <td>${toBRDate(r.proxima)}</td>
-              <td>${r.maquina||''} <span class="muted" style="font-size:12px">${r.codigo||''}</span></td>
-              <td>${r.item||''}</td>
-              <td>${r.tipo||''}</td>
-              <td>${r.status||''}</td>
-              <td>${(r.operadores||[]).join(', ')||'-'}</td>
-            `;
-            todayBody.appendChild(tr);
-          });
-      document.getElementById('monTodayCount').textContent = hoje.length;
-
-      // ATRASADAS (vermelho)
-      lateBody.innerHTML = '';
-      atras.sort((a,b)=> new Date(a.proxima) - new Date(b.proxima))
-           .forEach(r=>{
-             const tr = document.createElement('tr');
-             tr.className = 'tr-red';
-             tr.innerHTML = `
-               <td>${toBRDate(r.proxima)}</td>
-               <td>${r.maquina||''} <span class="muted" style="font-size:12px; color:rgba(255,255,255,.85)">${r.codigo||''}</span></td>
-               <td>${r.item||''}</td>
-               <td>${r.tipo||''}</td>
-               <td>${r.status||''}</td>
-               <td>${(r.operadores||[]).join(', ')||'-'}</td>
-             `;
-             lateBody.appendChild(tr);
-           });
-      document.getElementById('monLateCount').textContent = atras.length;
+    // ======= LISTA =======
+    function renderLista(){
+      const tb=document.getElementById('tbody'); tb.innerHTML='';
+      rows
+        .slice()
+        .sort((a,b)=> new Date(a.proxima)-new Date(b.proxima))
+        .forEach(r=>{
+          const tr=document.createElement('tr');
+          if(overdue(r.proxima) && r.status!=='Concluída') tr.className='late';
+          tr.innerHTML = `
+            <td>${toBR(r.proxima)}</td>
+            <td><code>${r.codigo||''}</code></td>
+            <td>${r.maquina||''}</td>
+            <td>${r.setor||''}</td>
+            <td>${r.item||''}</td>
+            <td>${r.tipo||''}</td>
+            <td>${r.status||''}</td>
+            <td>${(r.operadores||[]).join(', ')||'-'}</td>
+            <td>${r.duracaoHoras||''}</td>
+            <td>${fmtMoeda((r.custoTempo||0)+(r.custoMaterial||0))}</td>
+            <td>
+              <button class="btn" data-b="back">Voltar</button>
+              <button class="btn" data-b="next">Avançar</button>
+              <button class="btn" data-b="del">Remover</button>
+            </td>`;
+          const [bBack,bNext,bDel]=tr.querySelectorAll('button');
+          if(bBack) bBack.onclick=()=> mover(r.id,-1);
+          if(bNext) bNext.onclick=()=> mover(r.id,+1);
+          if(bDel)  bDel.onclick =()=> { rows=rows.filter(x=>x.id!==r.id); save(); renderKpis(); renderLista(); };
+          tb.appendChild(tr);
+        });
     }
 
-    function fmt(v){ try{ return Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'}); }catch(_){ return v||''; } }
+    function mover(id,delta){
+      const i=rows.findIndex(r=>r.id===id); if(i<0) return;
+      const idx=STATUS.indexOf(rows[i].status);
+      rows[i].status = STATUS[Math.max(0, Math.min(STATUS.length-1, idx+delta))];
+      save(); renderKpis(); renderLista();
+    }
 
-    // ---- Cadastro rápido ----
+    // ======= FORM =======
     document.getElementById('formCad').onsubmit=(e)=>{
       e.preventDefault();
       const fd=new FormData(e.target);
       const codigo=(fd.get('codigo')||'').toString().toUpperCase();
       const maquina=(fd.get('maquina')||'').toString();
-      const setor=(fd.get('setor')||'').toString() || 'Injeção';
+      const setor=(fd.get('setor')||'').toString();
       const item=(fd.get('item')||'').toString();
       const oque1=(fd.get('oque1')||'').toString();
       const oque2=(fd.get('oque2')||'').toString();
@@ -492,38 +241,38 @@
       const custoTempo=Number(fd.get('cTempo')||0);
       const custoMaterial=Number(fd.get('cMat')||0);
       const observacoes=(fd.get('obs')||'').toString();
-      rows=[{ id:uid(), codigo, maquina, setor, item, oque1, oque2, cicloDias, ultima, proxima, tipo,
-              status:'Planejada', operadores, duracaoHoras, custoTempo, custoMaterial, observacoes }, ...rows];
-      save(); preencherSelectSetor(); e.target.reset();
+
+      rows=[{ id:crypto.randomUUID(), codigo, maquina, setor, item, oque1, oque2, cicloDias,
+              ultima, proxima, tipo, status:'Planejada', operadores, duracaoHoras, custoTempo, custoMaterial, observacoes },
+            ...rows];
+      save(); e.target.reset(); renderKpis();
+      // abre/atualiza a lista se estiver visível
+      if(document.getElementById('listaPanel').style.display!=='none') renderLista();
+      alert('Programação criada!');
     };
 
-    // ---- Exportar CSV ----
+    // ======= TOGGLE LISTA =======
+    const toggleBtn=document.getElementById('toggleListaBtn');
+    const listaPanel=document.getElementById('listaPanel');
+    toggleBtn.onclick=()=>{
+      const showing = listaPanel.style.display!=='none';
+      listaPanel.style.display = showing ? 'none' : 'block';
+      toggleBtn.textContent = showing ? 'Ver planejamentos' : 'Ocultar planejamentos';
+      if(!showing){ renderLista(); }
+    };
+
+    // ======= EXPORT CSV =======
     document.getElementById('exportCsvBtn').onclick=()=>{
       const header=["CODIGO","MAQUINA","SETOR","ITEM","OQUE1","OQUE2","CICLO_DIAS","ULTIMA","PROXIMA","TIPO","STATUS","OPERADORES","DURACAO_H","CUSTO_TEMPO","CUSTO_MATERIAL","OBS"];
       const body=rows.map(r=>[r.codigo,r.maquina,r.setor,r.item,r.oque1,r.oque2,r.cicloDias,r.ultima,r.proxima,r.tipo,r.status,(r.operadores||[]).join('/'),r.duracaoHoras,r.custoTempo,r.custoMaterial,r.observacoes]);
       const csv=[header,...body].map(line=> line.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
       const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const url=URL.createObjectURL(blob);
-      const a=document.createElement('a'); a.href=url; a.download=`planejamento_${new Date().toISOString().slice(0,10)}.csv`; a.click();
-      setTimeout(()=>URL.revokeObjectURL(url),1000);
+      const a=document.createElement('a'); a.href=url; a.download=`planejamentos_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url),500);
     };
 
-    // ---- Tabs ----
-    const tabs=document.querySelectorAll('[data-tab]');
-    function setTab(name){
-      document.querySelectorAll('.tab').forEach(sec=> sec.style.display='none');
-      document.getElementById('tab-'+name).style.display='block';
-      tabs.forEach(b=> b.classList.toggle('pri', b.getAttribute('data-tab')===name));
-    }
-    tabs.forEach(b=> b.onclick=()=> setTab(b.getAttribute('data-tab')));
-    setTab('planejamento');
-
-    // ---- Render geral ----
-    function renderAll(){ renderTabela(); renderKanban(); renderChecklist(); renderKpis(); renderMonitor(); }
-    renderAll();
-
-    // opcional: atualizar a cada 60s (bom para TV de monitoramento)
-    // setInterval(renderAll, 60000);
+    // init
+    renderKpis();
   </script>
 </body>
 </html>
-
