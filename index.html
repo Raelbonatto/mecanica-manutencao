@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Mecânica – Planejamento de Manutenção</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- React pelo CDN + Babel para permitir JSX direto no navegador -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Estilos simples (sem Tailwind, sem instalação) -->
+  <style>
+    :root{ --bg:#f6f7fb; --card:#fff; --text:#0f172a; --muted:#64748b; --line:#e5e7eb; --rose:#ffe7ea; --rose2:#ef4444; --pri:#2563eb; }
+    *{ box-sizing:border-box; }
+    body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Helvetica Neue",Arial; background:var(--bg); color:var(--text);}
+    header{ position:sticky; top:0; backdrop-filter: blur(6px); background:rgba(255,255,255,.8); border-bottom:1px solid var(--line);}
+    .wrap{ max-width:1100px; margin:0 auto; padding:16px; }
+    h1{ font-size:20px; margin:0; display:flex; gap:8px; align-items:center; }
+    .grid{ display:grid; gap:12px; }
+    .g2{ grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .g3{ grid-template-columns: repeat(3,minmax(0,1fr)); }
+    .card{ background:var(--card); border:1px solid var(--line); border-radius:12px; box-shadow:0 1px 3px rgba(0,0,0,.04); }
+    .card h3{ margin:0; padding:12px 14px; border-bottom:1px solid var(--line); font-size:16px; }
+    .content{ padding:12px 14px; }
+    .row{ display:flex; gap:8px; flex-wrap:wrap; align-items:end; }
+    label{ font-size:12px; color:var(--muted); display:block; }
+    input, select, textarea, button{ font:inherit; }
+    input, select, textarea{ border:1px solid var(--line); border-radius:8px; padding:8px 10px; background:#fff; width:100%; }
+    textarea{ resize:vertical; }
+    .btn{ border:1px solid var(--line); background:#fff; padding:8px 12px; border-radius:8px; cursor:pointer; }
+    .btn.pri{ background:var(--pri); color:#fff; border-color:var(--pri); }
+    .btn.danger{ background:#ef4444; color:#fff; border-color:#ef4444; }
+    .btn.ghost{ background:#fff; }
+    .badge{ display:inline-block; padding:2px 8px; border-radius:999px; border:1px solid var(--line); font-size:12px; color:var(--muted);}
+    .badge.sec{ background:#f3f4f6; }
+    .kpi{ display:flex; align-items:center; gap:10px; padding:12px; }
+    .kpi .n{ font-weight:700; font-size:20px; }
+    .table-wrap{ overflow:auto; }
+    table{ border-collapse:collapse; width:100%; font-size:14px; }
+    th, td{ padding:10px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; }
+    thead th{ position:sticky; top:0; background:#f1f5f9; z-index:1; }
+    tr.late{ background:var(--rose); }
+    .kanban{ display:grid; gap:12px; grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .col .count{ float:right; }
+    .card-sm{ border:1px solid var(--line); border-radius:10px; padding:10px; background:#fff; }
+    .muted{ color:var(--muted); }
+    .danger{ color:var(--rose2); }
+    footer{ text-align:center; font-size:12px; color:var(--muted); padding:24px; }
+    @media (max-width:900px){ .g2{grid-template-columns:1fr;} .g3{grid-template-columns:1fr;} .kanban{grid-template-columns:1fr;} }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="wrap" style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+      <h1>🏭 Manutenção Industrial – Injetoras</h1>
+      <button class="btn" id="exportCsvBtn">Exportar CSV</button>
+    </div>
+  </header>
+
+  <main class="wrap grid" style="gap:16px;">
+
+    <!-- KPIs -->
+    <section class="grid g3">
+      <div class="card"><div class="kpi"><div>📄 Total</div><div class="n" id="kpiTotal">0</div></div></div>
+      <div class="card"><div class="kpi"><div class="danger">⏰ Atrasadas</div><div class="n" id="kpiAtrasadas">0</div></div></div>
+      <div class="card"><div class="kpi"><div>📆 Vencem hoje</div><div class="n" id="kpiHoje">0</div></div></div>
+    </section>
+
+    <!-- Filtros -->
+    <section class="card">
+      <h3>Filtros</h3>
+      <div class="content row">
+        <div style="min-width:220px; flex:1;">
+          <label>Buscar</label>
+          <input id="fBusca" placeholder="Código, máquina, item…" />
+        </div>
+        <div style="min-width:160px;">
+          <label>Setor</label>
+          <select id="fSetor">
+            <option value="todos">Todos</option>
+          </select>
+        </div>
+        <div style="min-width:160px;">
+          <label>Tipo</label>
+          <select id="fTipo">
+            <option value="todos">Todos</option>
+            <option>Preventiva</option>
+            <option>Preditiva</option>
+            <option>Corretiva</option>
+            <option>Melhoria</option>
+          </select>
+        </div>
+        <div style="min-width:160px;">
+          <label>Status</label>
+          <select id="fStatus">
+            <option value="todos">Todos</option>
+            <option>Planejada</option>
+            <option>Em Execução</option>
+            <option>Concluída</option>
+          </select>
+        </div>
+        <button class="btn" id="btnLimpar">Limpar</button>
+      </div>
+    </section>
+
+    <!-- Tabs simples -->
+    <section class="row" style="justify-content:flex-start">
+      <button class="btn" data-tab="planejamento">Planejamento</button>
+      <button class="btn" data-tab="quadro">Quadro</button>
+      <button class="btn" data-tab="checklist">Checklist</button>
+      <button class="btn" data-tab="cadastro">Cadastro rápido</button>
+    </section>
+
+    <!-- Planejamento -->
+    <section class="card tab" id="tab-planejamento">
+      <h3>Planejamento (Planilha)</h3>
+      <div class="content table-wrap">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th>Código</th><th>Máquina</th><th>Setor</th><th>Item</th>
+              <th>O que fazer</th><th>O que fazer 2</th>
+              <th>Ciclo (dias)</th><th>Última</th><th>Próxima</th>
+              <th>Tipo</th><th>Status</th><th>Operadores</th>
+              <th>Duração (h)</th><th>Custo tempo</th><th>Custo material</th>
+              <th>Obs.</th><th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Quadro -->
+    <section class="tab" id="tab-quadro">
+      <div class="grid kanban">
+        <div class="card col">
+          <h3>Planejada <span class="count" id="cPlanejada">0</span></h3>
+          <div class="content" id="colPlanejada"></div>
+        </div>
+        <div class="card col">
+          <h3>Em Execução <span class="count" id="cExec">0</span></h3>
+          <div class="content" id="colExec"></div>
+        </div>
+        <div class="card col">
+          <h3>Concluída <span class="count" id="cConc">0</span></h3>
+          <div class="content" id="colConc"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Checklist -->
+    <section class="card tab" id="tab-checklist">
+      <h3>Checklist</h3>
+      <div class="content grid g2" id="checklist"></div>
+    </section>
+
+    <!-- Cadastro rápido -->
+    <section class="card tab" id="tab-cadastro">
+      <h3>Cadastro rápido</h3>
+      <div class="content">
+        <form id="formCad" class="grid g2">
+          <div><label>Código</label><input name="codigo" placeholder="INJ-12" /></div>
+          <div><label>Máquina</label><input name="maquina" placeholder="Injetora 120T" /></div>
+          <div>
+            <label>Setor</label>
+            <input name="setor" placeholder="Injeção" list="listaSetores" />
+            <datalist id="listaSetores"></datalist>
+          </div>
+          <div><label>Item</label><input name="item" placeholder="Troca filtro óleo" /></div>
+          <div><label>O que fazer</label><input name="oque1" /></div>
+          <div><label>O que fazer 2</label><input name="oque2" /></div>
+          <div><label>Ciclo (dias)</label><input type="number" name="ciclo" value="30" /></div>
+          <div><label>Última manutenção</label><input type="date" name="ultima" /></div>
+          <div>
+            <label>Tipo</label>
+            <select name="tipo">
+              <option>Preventiva</option><option>Preditiva</option>
+              <option>Corretiva</option><option>Melhoria</option>
+            </select>
+          </div>
+          <div><label>Operadores (separe por vírgula)</label><input name="operadores" placeholder="Carlos,Aline" /></div>
+          <div><label>Duração (h)</label><input type="number" step="0.1" name="duracao" value="1.0" /></div>
+          <div><label>Custo tempo</label><input type="number" step="0.01" name="cTempo" value="0" /></div>
+          <div><label>Custo material</label><input type="number" step="0.01" name="cMat" value="0" /></div>
+          <div class="g2" style="grid-column:1/-1"><label>Observações</label><textarea name="obs" rows="3"></textarea></div>
+          <div style="grid-column:1/-1; display:flex; justify-content:flex-end;">
+            <button class="btn pri">Criar programação</button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>Protótipo simples – dados salvos no seu navegador (localStorage).</footer>
+
+  <!-- APP: React + localStorage -->
+  <script type="text/babel">
+    const {useState,useEffect,useMemo}=React;
+
+    const STORAGE_KEY='mecanica_planejamento_github_v1';
+    const STATUS=['Planejada','Em Execução','Concluída'];
+
+    function uid(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+    const addDays=(iso,d)=>{ const x=new Date(iso); x.setDate(x.getDate()+d); return x.toISOString(); }
+    const toBRDate=(d)=> new Date(d).toLocaleDateString('pt-BR');
+    const sameDay=(a,b)=> new Date(a).toDateString()===new Date(b).toDateString();
+    const overdue=(iso)=> new Date(iso) < new Date(new Date().toDateString()+" 23:59:59");
+
+    // Estado global simples fora do React (para facilitar atualizar várias seções)
+    let rows = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null') ?? [
+      { id:uid(), codigo:'INJ-12', maquina:'Injetora 120T', setor:'Injeção',
+        item:'Lubrificação eixo Z', oque1:'Lubrificar guias e fuso', oque2:'Checar folgas',
+        cicloDias:30, ultima:new Date().toISOString(), proxima:addDays(new Date().toISOString(),30),
+        tipo:'Preventiva', status:'Planejada', operadores:['Carlos'], duracaoHoras:1.5, custoTempo:1750, custoMaterial:0, observacoes:'Usar graxa EP-2' },
+      { id:uid(), codigo:'INJ-22', maquina:'Injetora 220T', setor:'Injeção',
+        item:'Troca filtro óleo hidráulico', oque1:'Substituir elemento', oque2:'Resetar contador',
+        cicloDias:90, ultima:addDays(new Date().toISOString(),-92), proxima:addDays(new Date().toISOString(),-2),
+        tipo:'Preventiva', status:'Planejada', operadores:['Aline'], duracaoHoras:2, custoTempo:0, custoMaterial:350, observacoes:'Código 0xF' }
+    ];
+    save();
+
+    function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(rows)); renderAll(); }
+
+    // ---- Filtros ----
+    const fBusca = document.getElementById('fBusca');
+    const fSetor = document.getElementById('fSetor');
+    const fTipo  = document.getElementById('fTipo');
+    const fStatus= document.getElementById('fStatus');
+    const btnLimpar=document.getElementById('btnLimpar');
+
+    function setoresUnicos(){ return Array.from(new Set(rows.map(r=>r.setor).filter(Boolean))).sort(); }
+    function preencherSelectSetor(){
+      const list = setoresUnicos();
+      fSetor.innerHTML = '<option value="todos">Todos</option>' + list.map(s=>`<option>${s}</option>`).join('');
+      // datalist do cadastro
+      const dl = document.getElementById('listaSetores');
+      dl.innerHTML = list.map(s=>`<option value="${s}">`).join('');
+    }
+    preencherSelectSetor();
+
+    function filtrados(){
+      const q=(fBusca.value||'').trim().toLowerCase();
+      return rows.filter(r=>{
+        const qok=!q || [r.codigo,r.maquina,r.item,r.oque1,r.oque2,r.setor].some(v=>String(v||'').toLowerCase().includes(q));
+        const sok=fSetor.value==='todos' || r.setor===fSetor.value;
+        const tok=fTipo.value==='todos'  || r.tipo===fTipo.value;
+        const stok=fStatus.value==='todos'|| r.status===fStatus.value;
+        return qok&&sok&&tok&&stok;
+      });
+    }
+    btnLimpar.onclick=()=>{ fBusca.value=''; fSetor.value='todos'; fTipo.value='todos'; fStatus.value='todos'; renderAll(); }
+    [fBusca,fSetor,fTipo,fStatus].forEach(el=> el.addEventListener('input', renderAll));
+
+    // ---- TABELA ----
+    function renderTabela(){
+      const tb=document.getElementById('tbody'); tb.innerHTML='';
+      filtrados().forEach(r=>{
+        const tr=document.createElement('tr');
+        if(overdue(r.proxima) && r.status!=='Concluída') tr.className='late';
+        tr.innerHTML=`
+          <td><code>${r.codigo||''}</code></td>
+          <td>${r.maquina||''}</td>
