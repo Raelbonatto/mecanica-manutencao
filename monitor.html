@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Monitor de Manutenção – Hoje & Atrasadas</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#0b1220; --panel:#0f172a; --line:#1f2937; --muted:#93a3b8;
+      --ok:#22c55e; --warn:#ef4444; --card:#111827; --text:#e5e7eb; --accent:#38bdf8;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial;
+      background:linear-gradient(180deg,#0b1220,#0b1220 30%,#0d1525); color:var(--text);
+    }
+    header{
+      position:sticky; top:0; background:#0f172a; border-bottom:1px solid var(--line);
+      padding:12px 18px; display:flex; align-items:center; justify-content:space-between;
+    }
+    header .title{ font-weight:700; letter-spacing:.5px; }
+    header .right{ display:flex; gap:8px; align-items:center; }
+    .btn{
+      background:#111827; border:1px solid #1f2937; color:#e5e7eb; padding:8px 12px; border-radius:10px; cursor:pointer;
+    }
+    .btn:hover{ filter:brightness(1.1); }
+    .wrap{ max-width:1400px; margin:0 auto; padding:18px; }
+
+    /* Cards KPIs */
+    .kpis{ display:grid; gap:14px; grid-template-columns:repeat(3,minmax(0,1fr)); }
+    .kpi{ background:#0f172a; border:1px solid var(--line); border-radius:14px; padding:18px; display:flex; gap:14px; align-items:center; }
+    .kpi .n{ font-size:48px; font-weight:800; }
+    .kpi .label{ color:var(--muted); font-size:14px; }
+    .danger{ color:var(--warn); }
+    .ok{ color:var(--ok); }
+
+    /* Tabelas grandes */
+    .grid2{ display:grid; gap:18px; grid-template-columns:repeat(2,minmax(0,1fr)); margin-top:18px; }
+    .panel{ background:#0f172a; border:1px solid var(--line); border-radius:14px; }
+    .panel h2{ margin:0; padding:14px 18px; border-bottom:1px solid var(--line); font-size:20px; }
+    .panel h2 .badge{ background:#111827; border:1px solid var(--line); padding:2px 10px; border-radius:999px; margin-left:8px; font-size:14px; color:#cbd5e1; }
+    .tbl{ width:100%; border-collapse:collapse; }
+    th,td{ padding:12px 14px; border-bottom:1px solid var(--line); text-align:left; font-size:18px; }
+    thead th{ position:sticky; top:0; background:#0f172a; z-index:1; color:#cbd5e1; font-weight:600; }
+    tr.red{ background:#3b0d0d; }
+    tr.red td{ color:#ffe5e5; }
+    .muted{ color:#9aa8bd; }
+    .foot{ text-align:center; color:#7c8da6; font-size:14px; padding:18px; }
+
+    @media (max-width:1100px){ .grid2{ grid-template-columns:1fr; } .kpis{ grid-template-columns:1fr; } th,td{ font-size:16px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">📺 Monitor de Manutenção — Hoje & Atrasadas</div>
+    <div class="right">
+      <a class="btn" href="./index.html">Abrir Planejamento</a>
+      <button id="fsBtn" class="btn">Tela cheia</button>
+      <button id="refreshBtn" class="btn">Atualizar agora</button>
+      <span id="lastSync" class="muted" style="margin-left:6px; font-size:13px;"></span>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <!-- KPIs -->
+    <section class="kpis">
+      <div class="kpi"><div class="n" id="kTotal">0</div><div><div class="label">Total filtrado</div></div></div>
+      <div class="kpi"><div class="n danger" id="kAtrasadas">0</div><div><div class="label">Atrasadas</div></div></div>
+      <div class="kpi"><div class="n ok" id="kHoje">0</div><div><div class="label">Vencem hoje</div></div></div>
+    </section>
+
+    <!-- Painéis -->
+    <section class="grid2">
+      <div class="panel">
+        <h2>📆 Para hoje <span class="badge" id="bHoje">0</span></h2>
+        <div style="overflow:auto">
+          <table class="tbl" id="tblHoje">
+            <thead><tr>
+              <th>Data</th><th>Máquina</th><th>Item</th><th>Tipo</th><th>Status</th><th>Operadores</th>
+            </tr></thead>
+            <tbody id="bodyHoje"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h2>🚨 Atrasadas <span class="badge" id="bAtrasadas">0</span></h2>
+        <div style="overflow:auto">
+          <table class="tbl" id="tblAtras">
+            <thead><tr>
+              <th>Data</th><th>Máquina</th><th>Item</th><th>Tipo</th><th>Status</th><th>Operadores</th>
+            </tr></thead>
+            <tbody id="bodyAtras"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="foot">Dados lidos do navegador (localStorage). Atualiza automático a cada 30s.</div>
+
+  <script>
+    const STORAGE_KEY='mecanica_planejamento_github_v1';
+
+    const sameDay=(a,b)=> new Date(a).toDateString()===new Date(b).toDateString();
+    const overdue=(iso)=> new Date(iso) < new Date(new Date().toDateString()+' 23:59:59');
+    const toBRDate=(d)=> new Date(d).toLocaleDateString('pt-BR');
+
+    function load(){ try{ return JSON.parse(localStorage.getItem(STORAGE_KEY)||'[]'); }catch(_){ return []; } }
+
+    function render(){
+      const rows = load();
+
+      const hoje = rows.filter(r=> sameDay(r.proxima,new Date()) && r.status!=='Concluída');
+      const atras= rows.filter(r=> overdue(r.proxima) && r.status!=='Concluída');
+
+      // KPIs
+      document.getElementById('kTotal').textContent = rows.length;
+      document.getElementById('kAtrasadas').textContent = atras.length;
+      document.getElementById('kHoje').textContent = hoje.length;
+
+      // Hoje
+      const bh = document.getElementById('bodyHoje'); bh.innerHTML='';
+      hoje.sort((a,b)=> new Date(a.proxima)-new Date(b.proxima)).forEach(r=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML = `
+          <td>${toBRDate(r.proxima)}</td>
+          <td>${r.maquina||''} <span class="muted" style="font-size:14px">• ${r.codigo||''}</span></td>
+          <td>${r.item||''}</td>
+          <td>${r.tipo||''}</td>
+          <td>${r.status||''}</td>
+          <td>${(r.operadores||[]).join(', ')||'-'}</td>
+        `;
+        bh.appendChild(tr);
+      });
+      document.getElementById('bHoje').textContent = hoje.length;
+
+      // Atrasadas
+      const ba = document.getElementById('bodyAtras'); ba.innerHTML='';
+      atras.sort((a,b)=> new Date(a.proxima)-new Date(b.proxima)).forEach(r=>{
+        const tr=document.createElement('tr'); tr.className='red';
+        tr.innerHTML = `
+          <td>${toBRDate(r.proxima)}</td>
+          <td>${r.maquina||''} <span class="muted" style="font-size:14px; color:#fbd3d3">• ${r.codigo||''}</span></td>
+          <td>${r.item||''}</td>
+          <td>${r.tipo||''}</td>
+          <td>${r.status||''}</td>
+          <td>${(r.operadores||[]).join(', ')||'-'}</td>
+        `;
+        ba.appendChild(tr);
+      });
+      document.getElementById('bAtrasadas').textContent = atras.length;
+
+      document.getElementById('lastSync').textContent = 'Atualizado: ' + new Date().toLocaleTimeString('pt-BR');
+    }
+
+    // Botões topo
+    document.getElementById('refreshBtn').onclick = render;
+    document.getElementById('fsBtn').onclick = ()=>{
+      if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+      else document.exitFullscreen();
+    };
+
+    render();
+    setInterval(render, 30000); // 30s
+  </script>
+</body>
+</html>
