@@ -64,37 +64,33 @@
   </header>
 
   <div class="wrap grid">
-    <!-- KPIs simples -->
+    <!-- KPIs -->
     <section class="kpis">
       <div class="kpi"><div class="n" id="kTotal">0</div><div>Total</div></div>
       <div class="kpi"><div class="n danger" id="kAtrasadas">0</div><div>Atrasadas</div></div>
       <div class="kpi"><div class="n ok" id="kHoje">0</div><div>Vencem hoje</div></div>
     </section>
 
-    <!-- Formulário de Planejamento -->
+    <!-- Formulário simplificado -->
     <section class="panel">
       <h2>✍️ Planejar nova manutenção</h2>
       <div class="content">
         <form id="formCad" class="grid">
           <div class="two">
-            <div><label>Código</label><input name="codigo" placeholder="INJ-12"></div>
             <div><label>Máquina</label><input name="maquina" placeholder="Injetora 120T" list="listaEquip"></div>
             <datalist id="listaEquip"></datalist>
-          </div>
-          <div class="two">
-            <div><label>Setor</label><input name="setor" placeholder="Injeção"></div>
+
             <div><label>Item (serviço)</label><input name="item" placeholder="Troca filtro óleo" list="listaServ"></div>
             <datalist id="listaServ"></datalist>
           </div>
+
           <div class="two">
+            <div><label>Setor</label><input name="setor" placeholder="Injeção"></div>
             <div><label>O que fazer</label><input name="oque1"></div>
-            <div><label>O que fazer 2</label><input name="oque2"></div>
           </div>
+
           <div class="two">
-            <div><label>Ciclo (dias)</label><input type="number" name="ciclo" value="30"></div>
             <div><label>Última manutenção</label><input type="date" name="ultima"></div>
-          </div>
-          <div class="two">
             <div>
               <label>Tipo</label>
               <select name="tipo" id="selectTipo">
@@ -102,17 +98,19 @@
                 <option>Corretiva</option><option>Melhoria</option>
               </select>
             </div>
+          </div>
+
+          <div class="two">
             <div><label>Operadores (vírgula)</label><input name="operadores" placeholder="Carlos,Aline" list="listaOps"></div>
             <datalist id="listaOps"></datalist>
+
+            <!-- Repetição -->
+            <div>
+              <label><input type="checkbox" id="chkRepetir"> Repetir manutenção</label>
+              <input type="number" id="diasRepetir" name="ciclo" placeholder="Dias" style="display:none; margin-top:6px;" />
+            </div>
           </div>
-          <div class="two">
-            <div><label>Duração (h)</label><input type="number" step="0.1" name="duracao" value="1.0"></div>
-            <div><label>Custo material (R$)</label><input type="number" step="0.01" name="cMat" value="0"></div>
-          </div>
-          <div class="two">
-            <div><label>Custo tempo (R$)</label><input type="number" step="0.01" name="cTempo" value="0"></div>
-            <div><label>Observações</label><input name="obs"></div>
-          </div>
+
           <div class="row" style="justify-content:flex-end">
             <button class="btn primary">Criar programação</button>
           </div>
@@ -120,7 +118,7 @@
       </div>
     </section>
 
-    <!-- Lista de Planejamentos (inicialmente escondida) -->
+    <!-- Lista de Planejamentos -->
     <section class="panel" id="listaPanel" style="display:none">
       <h2>📄 Todos os planejamentos</h2>
       <div class="content" style="padding:0">
@@ -128,9 +126,9 @@
           <table>
             <thead>
               <tr>
-                <th>Próxima</th><th>Código</th><th>Máquina</th><th>Setor</th>
+                <th>Próxima</th><th>Máquina</th><th>Setor</th>
                 <th>Item</th><th>Tipo</th><th>Status</th><th>Operadores</th>
-                <th>Duração(h)</th><th>Custo</th><th class="muted">Ações</th>
+                <th>Ciclo (dias)</th><th>Obs.</th><th class="muted">Ações</th>
               </tr>
             </thead>
             <tbody id="tbody"></tbody>
@@ -149,17 +147,11 @@
     const addDays=(iso,d)=>{ const x=new Date(iso); x.setDate(x.getDate()+d); return x.toISOString(); }
     const sameDay=(a,b)=> new Date(a).toDateString()===new Date(b).toDateString();
     const overdue=(iso)=> new Date(iso) < new Date(new Date().toDateString()+' 23:59:59');
-    const fmtMoeda = v => Number(v||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
 
-    let rows = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null') ?? [
-      { id:crypto.randomUUID(), codigo:'INJ-12', maquina:'Injetora 120T', setor:'Injeção',
-        item:'Lubrificação eixo Z', oque1:'Lubrificar guias', oque2:'Checar folgas',
-        cicloDias:30, ultima:new Date().toISOString(), proxima:addDays(new Date().toISOString(),30),
-        tipo:'Preventiva', status:'Planejada', operadores:['Carlos'], duracaoHoras:1.5, custoTempo:0, custoMaterial:0, observacoes:'' }
-    ];
+    let rows = JSON.parse(localStorage.getItem(STORAGE_KEY)||'null') ?? [];
     function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(rows)); }
 
-    // ======= CADASTROS -> datalists/select (opcional, lidos do localStorage dos cadastros) =======
+    // masters (sugestões)
     function applyMasters(){
       let m={}; try{ m = JSON.parse(localStorage.getItem('mecanica_masters_v1')||'{}'); }catch(_){}
       const equip=(m.equipamentos||[]).sort();
@@ -173,7 +165,7 @@
     }
     applyMasters();
 
-    // ======= KPI =======
+    // KPIs
     function renderKpis(){
       const atras = rows.filter(r=>overdue(r.proxima) && r.status!=='Concluída').length;
       const hoje  = rows.filter(r=>sameDay(r.proxima,new Date()) && r.status!=='Concluída').length;
@@ -182,7 +174,7 @@
       document.getElementById('kHoje').textContent = hoje;
     }
 
-    // ======= LISTA =======
+    // Lista
     function renderLista(){
       const tb=document.getElementById('tbody'); tb.innerHTML='';
       rows
@@ -193,15 +185,14 @@
           if(overdue(r.proxima) && r.status!=='Concluída') tr.className='late';
           tr.innerHTML = `
             <td>${toBR(r.proxima)}</td>
-            <td><code>${r.codigo||''}</code></td>
             <td>${r.maquina||''}</td>
             <td>${r.setor||''}</td>
             <td>${r.item||''}</td>
             <td>${r.tipo||''}</td>
             <td>${r.status||''}</td>
             <td>${(r.operadores||[]).join(', ')||'-'}</td>
-            <td>${r.duracaoHoras||''}</td>
-            <td>${fmtMoeda((r.custoTempo||0)+(r.custoMaterial||0))}</td>
+            <td>${r.cicloDias ?? '-'}</td>
+            <td>${r.observacoes||''}</td>
             <td>
               <button class="btn" data-b="back">Voltar</button>
               <button class="btn" data-b="next">Avançar</button>
@@ -222,36 +213,42 @@
       save(); renderKpis(); renderLista();
     }
 
-    // ======= FORM =======
+    // Repetição (mostrar/ocultar)
+    const chkRepetir = document.getElementById('chkRepetir');
+    const diasRepetir = document.getElementById('diasRepetir');
+    chkRepetir.onchange = ()=>{ diasRepetir.style.display = chkRepetir.checked ? 'block' : 'none'; };
+
+    // Submit
     document.getElementById('formCad').onsubmit=(e)=>{
       e.preventDefault();
       const fd=new FormData(e.target);
-      const codigo=(fd.get('codigo')||'').toString().toUpperCase();
       const maquina=(fd.get('maquina')||'').toString();
-      const setor=(fd.get('setor')||'').toString();
       const item=(fd.get('item')||'').toString();
+      const setor=(fd.get('setor')||'').toString();
       const oque1=(fd.get('oque1')||'').toString();
-      const oque2=(fd.get('oque2')||'').toString();
-      const cicloDias=Number(fd.get('ciclo')||30);
       const ultima=new Date(fd.get('ultima')||new Date()).toISOString();
-      const proxima=addDays(ultima, cicloDias);
       const tipo=(fd.get('tipo')||'Preventiva').toString();
       const operadores=((fd.get('operadores')||'').toString().split(',').map(s=>s.trim()).filter(Boolean));
-      const duracaoHoras=Number(fd.get('duracao')||1);
-      const custoTempo=Number(fd.get('cTempo')||0);
-      const custoMaterial=Number(fd.get('cMat')||0);
-      const observacoes=(fd.get('obs')||'').toString();
+      const observacoes='';
 
-      rows=[{ id:crypto.randomUUID(), codigo, maquina, setor, item, oque1, oque2, cicloDias,
-              ultima, proxima, tipo, status:'Planejada', operadores, duracaoHoras, custoTempo, custoMaterial, observacoes },
-            ...rows];
-      save(); e.target.reset(); renderKpis();
-      // abre/atualiza a lista se estiver visível
-      if(document.getElementById('listaPanel').style.display!=='none') renderLista();
+      let cicloDias = null;
+      let proxima = ultima;
+      if(chkRepetir.checked){
+        cicloDias = Number(fd.get('ciclo')||30);
+        proxima = addDays(ultima, cicloDias);
+      }
+
+      rows=[{
+        id:crypto.randomUUID(), maquina, item, setor, oque1,
+        cicloDias, ultima, proxima, tipo, status:'Planejada',
+        operadores, observacoes
+      }, ...rows];
+      save(); e.target.reset(); chkRepetir.checked=false; diasRepetir.style.display='none';
+      renderKpis(); if(document.getElementById('listaPanel').style.display!=='none') renderLista();
       alert('Programação criada!');
     };
 
-    // ======= TOGGLE LISTA =======
+    // Toggle lista
     const toggleBtn=document.getElementById('toggleListaBtn');
     const listaPanel=document.getElementById('listaPanel');
     toggleBtn.onclick=()=>{
@@ -261,10 +258,10 @@
       if(!showing){ renderLista(); }
     };
 
-    // ======= EXPORT CSV =======
+    // Export CSV
     document.getElementById('exportCsvBtn').onclick=()=>{
-      const header=["CODIGO","MAQUINA","SETOR","ITEM","OQUE1","OQUE2","CICLO_DIAS","ULTIMA","PROXIMA","TIPO","STATUS","OPERADORES","DURACAO_H","CUSTO_TEMPO","CUSTO_MATERIAL","OBS"];
-      const body=rows.map(r=>[r.codigo,r.maquina,r.setor,r.item,r.oque1,r.oque2,r.cicloDias,r.ultima,r.proxima,r.tipo,r.status,(r.operadores||[]).join('/'),r.duracaoHoras,r.custoTempo,r.custoMaterial,r.observacoes]);
+      const header=["MAQUINA","SETOR","ITEM","OQUE1","CICLO_DIAS","ULTIMA","PROXIMA","TIPO","STATUS","OPERADORES"];
+      const body=rows.map(r=>[r.maquina,r.setor,r.item,r.oque1,r.cicloDias??'',r.ultima,r.proxima,r.tipo,r.status,(r.operadores||[]).join('/')]);
       const csv=[header,...body].map(line=> line.map(v=>`"${String(v??'').replace(/"/g,'""')}"`).join(',')).join('\n');
       const blob=new Blob([csv],{type:'text/csv;charset=utf-8'}); const url=URL.createObjectURL(blob);
       const a=document.createElement('a'); a.href=url; a.download=`planejamentos_${new Date().toISOString().slice(0,10)}.csv`; a.click();
@@ -276,3 +273,4 @@
   </script>
 </body>
 </html>
+
