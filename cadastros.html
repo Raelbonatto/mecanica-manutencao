@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <title>Cadastros – Equipamentos, Serviços, Operadores, Tipos</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    :root{
+      --bg:#0b1220; --panel:#0f172a; --line:#1f2937; --muted:#93a3b8;
+      --text:#e5e7eb; --accent:#38bdf8; --danger:#ef4444; --ok:#22c55e;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{ margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Arial;
+      background:linear-gradient(180deg,#0b1220,#0b1220 30%,#0d1525); color:var(--text); }
+    header{ position:sticky; top:0; background:#0f172a; border-bottom:1px solid var(--line);
+      padding:12px 18px; display:flex; align-items:center; justify-content:space-between; }
+    .title{ font-weight:700; letter-spacing:.3px; }
+    .wrap{ max-width:1100px; margin:0 auto; padding:18px; }
+    .btn{ background:#111827; border:1px solid #1f2937; color:#e5e7eb; padding:8px 12px; border-radius:10px; cursor:pointer; }
+    .btn:hover{ filter:brightness(1.1); }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:end; }
+    input{ background:#0f172a; color:#e5e7eb; border:1px solid #1f2937; border-radius:8px; padding:8px 10px; }
+    .grid{ display:grid; gap:16px; grid-template-columns:repeat(2,minmax(0,1fr)); }
+    @media (max-width:1000px){ .grid{ grid-template-columns:1fr; } }
+    .panel{ background:#0f172a; border:1px solid var(--line); border-radius:14px; overflow:hidden; }
+    .panel h2{ margin:0; padding:12px 16px; border-bottom:1px solid var(--line); font-size:18px; }
+    .content{ padding:14px 16px; }
+    table{ width:100%; border-collapse:collapse; }
+    th,td{ padding:10px 12px; border-bottom:1px solid var(--line); text-align:left; }
+    thead th{ color:#cbd5e1; background:#0f172a; position:sticky; top:0; }
+    .muted{ color:#93a3b8; }
+    .pill{ display:inline-block; padding:2px 8px; border:1px solid var(--line); border-radius:999px; font-size:12px; background:#111827; }
+    .right{ text-align:right; }
+    .danger{ color:#ffb4b4; }
+    footer{ text-align:center; color:#93a3b8; padding:18px; font-size:13px; }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="title">🗂️ Cadastros — Equipamentos, Serviços, Operadores, Tipos</div>
+    <div class="row">
+      <a class="btn" href="./index.html">Abrir Planejamento</a>
+      <a class="btn" href="./monitor.html">Abrir Monitor</a>
+      <button id="exportBtn" class="btn">Exportar JSON</button>
+      <label class="btn" style="cursor:pointer">
+        Importar JSON
+        <input id="importFile" type="file" accept="application/json" style="display:none">
+      </label>
+    </div>
+  </header>
+
+  <div class="wrap grid">
+    <!-- Equipamentos -->
+    <section class="panel">
+      <h2>🏭 Equipamentos <span class="pill" id="eqCount">0</span></h2>
+      <div class="content">
+        <form id="eqForm" class="row">
+          <div><label class="muted">Nome do equipamento</label><br><input name="nome" placeholder="Injetora 120T"></div>
+          <button class="btn" type="submit">Adicionar</button>
+        </form>
+      </div>
+      <div style="max-height:360px; overflow:auto;">
+        <table>
+          <thead><tr><th>Nome</th><th class="right">Ações</th></tr></thead>
+          <tbody id="eqBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Serviços -->
+    <section class="panel">
+      <h2>🧰 Serviços <span class="pill" id="svCount">0</span></h2>
+      <div class="content">
+        <form id="svForm" class="row">
+          <div><label class="muted">Descrição do serviço</label><br><input name="nome" placeholder="Troca do filtro de óleo"></div>
+          <button class="btn" type="submit">Adicionar</button>
+        </form>
+      </div>
+      <div style="max-height:360px; overflow:auto;">
+        <table>
+          <thead><tr><th>Descrição</th><th class="right">Ações</th></tr></thead>
+          <tbody id="svBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Operadores -->
+    <section class="panel">
+      <h2>👷 Operadores <span class="pill" id="opCount">0</span></h2>
+      <div class="content">
+        <form id="opForm" class="row">
+          <div><label class="muted">Nome do operador</label><br><input name="nome" placeholder="Carlos Silva"></div>
+          <button class="btn" type="submit">Adicionar</button>
+        </form>
+      </div>
+      <div style="max-height:360px; overflow:auto;">
+        <table>
+          <thead><tr><th>Nome</th><th class="right">Ações</th></tr></thead>
+          <tbody id="opBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Tipos -->
+    <section class="panel">
+      <h2>📝 Tipos de manutenção <span class="pill" id="tpCount">0</span></h2>
+      <div class="content">
+        <form id="tpForm" class="row">
+          <div><label class="muted">Tipo</label><br><input name="nome" placeholder="Preventiva"></div>
+          <button class="btn" type="submit">Adicionar</button>
+        </form>
+      </div>
+      <div style="max-height:360px; overflow:auto;">
+        <table>
+          <thead><tr><th>Tipo</th><th class="right">Ações</th></tr></thead>
+          <tbody id="tpBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <footer>Os cadastros ficam no navegador (localStorage) e são usados nas telas de Planejamento e Monitor.</footer>
+
+  <script>
+    // === CHAVES DE ARMAZENAMENTO ===
+    const MASTERS_KEY = 'mecanica_masters_v1';
+
+    // === ESTADO ===
+    function load(){
+      try{
+        return JSON.parse(localStorage.getItem(MASTERS_KEY) || 'null') || {
+          equipamentos: [],        // strings
+          servicos:    [],
+          operadores:  [],
+          tipos:       ['Preventiva','Preditiva','Corretiva','Melhoria']
+        };
+      }catch(e){
+        return { equipamentos:[], servicos:[], operadores:[], tipos:['Preventiva','Preditiva','Corretiva','Melhoria'] };
+      }
+    }
+    let state = load();
+    function save(){ localStorage.setItem(MASTERS_KEY, JSON.stringify(state)); render(); }
+
+    // === RENDER ===
+    function renderList(arr, bodyEl, countEl){
+      bodyEl.innerHTML='';
+      arr.forEach((nome, idx)=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML=`<td>${nome}</td>
+          <td class="right">
+            <button class="btn" data-del="${idx}">Remover</button>
+          </td>`;
+        bodyEl.appendChild(tr);
+      });
+      countEl.textContent = arr.length;
+    }
+
+    function render(){
+      renderList(state.equipamentos, document.getElementById('eqBody'), document.getElementById('eqCount'));
+      renderList(state.servicos,    document.getElementById('svBody'), document.getElementById('svCount'));
+      renderList(state.operadores,  document.getElementById('opBody'), document.getElementById('opCount'));
+      renderList(state.tipos,       document.getElementById('tpBody'), document.getElementById('tpCount'));
+
+      // listeners de remover
+      document.querySelectorAll('#eqBody [data-del]').forEach(b=> b.onclick=()=>{ state.equipamentos.splice(+b.dataset.del,1); save(); });
+      document.querySelectorAll('#svBody [data-del]').forEach(b=> b.onclick=()=>{ state.servicos.splice(+b.dataset.del,1); save(); });
+      document.querySelectorAll('#opBody [data-del]').forEach(b=> b.onclick=()=>{ state.operadores.splice(+b.dataset.del,1); save(); });
+      document.querySelectorAll('#tpBody [data-del]').forEach(b=> b.onclick=()=>{ state.tipos.splice(+b.dataset.del,1); save(); });
+    }
+
+    // === FORMULÁRIOS ===
+    function handleForm(formId, targetArr){
+      document.getElementById(formId).onsubmit = (e)=>{
+        e.preventDefault();
+        const nome = (new FormData(e.target).get('nome')||'').toString().trim();
+        if(!nome) return;
+        if(!state[targetArr].includes(nome)) state[targetArr].push(nome);
+        e.target.reset();
+        save();
+      };
+    }
+    handleForm('eqForm','equipamentos');
+    handleForm('svForm','servicos');
+    handleForm('opForm','operadores');
+    handleForm('tpForm','tipos');
+
+    // === EXPORTAR/IMPORTAR JSON (backup/restore) ===
+    document.getElementById('exportBtn').onclick = ()=>{
+      const blob = new Blob([JSON.stringify(state,null,2)], {type:'application/json'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='cadastros.json'; a.click();
+      setTimeout(()=>URL.revokeObjectURL(url), 500);
+    };
+    document.getElementById('importFile').onchange = async (e)=>{
+      const file = e.target.files?.[0]; if(!file) return;
+      try{
+        const txt = await file.text();
+        const data = JSON.parse(txt);
+        if(data && typeof data==='object'){
+          state = Object.assign(load(), data);
+          save();
+          alert('Importado com sucesso!');
+        }
+      }catch(err){ alert('Arquivo inválido.'); }
+      e.target.value='';
+    };
+
+    render();
+  </script>
+</body>
+</html>
